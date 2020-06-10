@@ -1,5 +1,5 @@
-# ADMM_RNN
-ADMMiRNN:ADMMiRNN: Training RNN with Stable Convergence via An Efficient ADMM Approach
+# ADMMiRNN
+ADMMiRNN: Training RNN with Stable Convergence via An Efficient ADMM Approach
 
 
 
