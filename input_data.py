@@ -13,18 +13,6 @@ def to_categorical(y, num_classes):
     """ 1-hot encodes a tensor """
     return np.eye(num_classes, dtype='uint8')[y]
 
-def load_data(path,files):
-    paths = [path+ each for each in files ]
-    with gzip.open(paths[0], 'rb') as lbpath:
-        train_labels = np.frombuffer(lbpath.read(), np.uint8, offset=8)
-    with gzip.open(paths[1], 'rb') as impath:
-        train_images = np.frombuffer(impath.read(), np.uint8, offset=16).reshape(len(train_labels),28,28)
-    with gzip.open(paths[2], 'rb') as lbpath:
-        test_labels = np.frombuffer(lbpath.read(), np.uint8, offset=8)
-    with gzip.open(paths[3], 'rb') as impath:
-        test_images = np.frombuffer(impath.read(), np.uint8, offset=16).reshape(len(test_labels), 28, 28)
-    return (train_labels,train_images), (test_labels,test_images)
-
 class DataSubset(object):
 	def __init__(self, xs, ys):
 		self.xs = xs
