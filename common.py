@@ -1,14 +1,10 @@
 ## all of the update rule in ADMM RNN
-from __future__ import absolute_import
-from __future__ import division
-from __future__ import print_function
-
-import numpy as np
+import torch
 
 
 # tanh
 def tanh(x):
-    return np.tanh(x)
+    return torch.tanh(x)
 
 
 # return the derivative of tanh()
@@ -20,12 +16,12 @@ def der_tanh(x):
 
 # softmax
 def softmax(x):
-    return np.exp(x) / np.sum(np.exp(x), axis=0)
+    return torch.exp(x) / torch.sum(torch.exp(x), axis=0)
 
 
 # cross-entropy loss function
 def cross_entropy(label, prob):
-    loss = -np.sum(label * np.log(prob))
+    loss = -torch.sum(label * torch.log(prob))
     return loss
 
 
@@ -38,17 +34,17 @@ def cross_entropy_with_softmax(label, output):
 
 # return relu
 def relu(x):
-    return np.maximum(x, 0)
+    return torch.max(x, 0)
 
 
 # return the value of phi
 def phi(a, u, x, w, s_old, b, s_new, lambda1, lambda2, lambda3, o, v, rho1, rho2, rho3):
-    temp1 = a - np.matmul(u, x) - np.matmul(w, s_old) - b + lambda1 / rho1
-    temp1 = rho1 / 2 * np.sum(temp1 * temp1)
+    temp1 = a - torch.matmul(u, x) - torch.matmul(w, s_old) - b + lambda1 / rho1
+    temp1 = rho1 / 2 * torch.sum(temp1 * temp1)
     temp2 = s_new - tanh(a) + lambda2 / rho2
-    temp2 = rho2 / 2 * np.sum(temp2 * temp2)
-    temp3 = o - np.matmul(v, s_new) + lambda3 / rho3
-    temp3 = rho3 / 2 * np.sum(temp3 * temp3)
+    temp2 = rho2 / 2 * torch.sum(temp2 * temp2)
+    temp3 = o - torch.matmul(v, s_new) + lambda3 / rho3
+    temp3 = rho3 / 2 * torch.sum(temp3 * temp3)
     res = temp1 + temp2 + temp3
     return res
 
@@ -64,21 +60,21 @@ def phi_u(lambda1, rho1, a, u, inputs, w, s, b, mu):
     vocab_size = u.shape[1]
     x = {}
     tao = 1
-    temp1 = np.zeros_like(u)
-    # temp2 = np.zeros_like(u)
+    temp1 = torch.zeros_like(u)
+    # temp2 = torch.zeros_like(u)
     # mu = 0.001
     for t in range(len(inputs) - 1):
-        x[t] = np.zeros((vocab_size, 1))
+        x[t] = torch.zeros((vocab_size, 1))
         x[t][inputs[t]] = 1
-        temp= a[t] - np.dot(u, x[t]) - np.dot(w, s[t-1]) - b
-        temp1 = temp1 + np.dot(temp, x[t].T)
-        # temp2 = temp2 + np.dot(temp, x[t].T)
+        temp= a[t] - torch.mm(u, x[t]) - torch.mm(w, s[t-1]) - b
+        temp1 = temp1 + torch.mm(temp, x[t].T)
+        # temp2 = temp2 + torch.mm(temp, x[t].T)
     temp = mu * temp1
     N = len(inputs) - 1
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
-    temp2 = a[N] - np.dot(u, x[N]) - np.dot(w, s[N-1]) - b - lambda1 / rho1
-    final = rho1 * np.dot(temp2, x[N].T)
+    temp2 = a[N] - torch.mm(u, x[N]) - torch.mm(w, s[N-1]) - b - lambda1 / rho1
+    final = rho1 * torch.mm(temp2, x[N].T)
     res = u - (temp + final) / tao
     return res
 
@@ -88,21 +84,21 @@ def phi_w(lambda1, rho1, a, u, inputs, w_old, s, b, mu):
     vocab_size = u.shape[1]
     x = {}
     tao = 1
-    temp1 = np.zeros_like(w_old)
-    # temp2 = np.zeros_like(w_old)
+    temp1 = torch.zeros_like(w_old)
+    # temp2 = torch.zeros_like(w_old)
     mu = 0.1
     for t in range(len(inputs) - 1):
-        x[t] = np.zeros((vocab_size, 1))
+        x[t] = torch.zeros((vocab_size, 1))
         x[t][inputs[t]] = 1
-        temp = a[t] - np.dot(u, x[t]) - np.dot(w_old, s[t-1]) - b
-        temp1 = temp1 + np.dot(temp, s[t-1].T)
-        # temp2 = temp2 + np.dot(temp, s[t-1].T)
+        temp = a[t] - torch.mm(u, x[t]) - torch.mm(w_old, s[t-1]) - b
+        temp1 = temp1 + torch.mm(temp, s[t-1].T)
+        # temp2 = temp2 + torch.mm(temp, s[t-1].T)
     temp2 = mu * temp1
     N = len(inputs) - 1
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
-    temp = a[N] - np.dot(u, x[N]) - np.dot(w_old, s[N - 1]) - b - lambda1 / rho1
-    final = rho1 * np.dot(temp, s[N-1].T)
+    temp = a[N] - torch.mm(u, x[N]) - torch.mm(w_old, s[N - 1]) - b - lambda1 / rho1
+    final = rho1 * torch.mm(temp, s[N-1].T)
     res = w_old - (temp2 + final) / tao
     return res
 
@@ -111,18 +107,18 @@ def phi_w(lambda1, rho1, a, u, inputs, w_old, s, b, mu):
 def phi_b(lambda1, rho1, a, u, inputs, w, s, b_old, mu):
     vocab_size = u.shape[1]
     x = {}
-    temp1 = np.zeros_like(b_old)
+    temp1 = torch.zeros_like(b_old)
     # mu = 0.1
     for t in range(len(inputs) - 1):
-        x[t] = np.zeros((vocab_size, 1))
+        x[t] = torch.zeros((vocab_size, 1))
         x[t][inputs[t]] = 1
-        temp = a[t] - np.dot(u, x[t]) - np.dot(w, s[t-1])
+        temp = a[t] - torch.mm(u, x[t]) - torch.mm(w, s[t-1])
         temp1 = temp1 + temp
     temp = mu * temp1
     N = len(inputs) - 1
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
-    temp_final = a[N] - np.dot(u, x[N]) - np.dot(w, s[N-1]) - lambda1 / rho1
+    temp_final = a[N] - torch.mm(u, x[N]) - torch.mm(w, s[N-1]) - lambda1 / rho1
     final = rho1 * temp_final
     res = (temp + final) / (rho1 + mu*N)
     return res
@@ -136,17 +132,17 @@ def phi_a(lambda1, a_old, u, inputs, w, s, b, rho1, lambda2, rho2, mu):
     res = {}
     tao = 1
     for t in range(N):
-        x[t] = np.zeros((vocab_size, 1))
+        x[t] = torch.zeros((vocab_size, 1))
         x[t][inputs[t]] = 1
-        # temp1 = a_old[t] - np.dot(u, x[t]) - np.dot(w, s[t-1]) - b
-        temp1 = a_old[t] - (np.dot(u, x[t]) + np.dot(w, s[t - 1]) + b)
+        # temp1 = a_old[t] - torch.mm(u, x[t]) - torch.mm(w, s[t-1]) - b
+        temp1 = a_old[t] - (torch.mm(u, x[t]) + torch.mm(w, s[t - 1]) + b)
         der = -der_tanh(a_old[t])
-        temp2 = (s[t]-tanh(a_old[t])) * der      # np.dot(s[t]-tanh(a_old[t]), der)
+        temp2 = (s[t]-tanh(a_old[t])) * der      # torch.mm(s[t]-tanh(a_old[t]), der)
         res[t]= a_old[t] + (mu / tao) * (temp1 + temp2)
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
-    # temp3 = a_old[N] - np.dot(u, x[N]) - np.dot(w, s[N-1]) - b - lambda1 / rho1
-    temp1 = a_old[N] - (np.dot(u, x[N]) + np.dot(w, s[N - 1]) + b + lambda1 / rho1)
+    # temp3 = a_old[N] - torch.mm(u, x[N]) - torch.mm(w, s[N-1]) - b - lambda1 / rho1
+    temp1 = a_old[N] - (torch.mm(u, x[N]) + torch.mm(w, s[N - 1]) + b + lambda1 / rho1)
     temp3 = rho1 * temp1
     temp2 = s[N] - tanh(a_old[N]) - lambda2 / rho2
     der = -der_tanh(a_old[N])
@@ -163,53 +159,53 @@ def phi_s(lambda1, s_old, a, u, inputs, w, b, rho1, lambda2, rho2, lambda3, o, v
     x = {}
     res = {}
     tao = 1
-    res[-1] = np.copy(s_old[-1])
+    res[-1] = s_old[-1].clone()
     for t in range(N):
-        x[t] = np.zeros((vocab_size, 1))
+        x[t] = torch.zeros((vocab_size, 1))
         x[t][inputs[t]] = 1
-        # temp1 = a[t] - np.dot(u, x[t]) - np.dot(w, s_old[t - 1]) - b
+        # temp1 = a[t] - torch.mm(u, x[t]) - torch.mm(w, s_old[t - 1]) - b
         # temp2 = s_old[t] - tanh(a[t]) - lambda2 / rho2
         temp1 = mu * tanh(a[t])
         temp2 = (N-1) / N * s_old[t]
-        temp3 = o[t] - np.dot(v, s_old[t]) - c
-        temp= temp1 + temp2 - mu * np.dot(v.T, temp3)
+        temp3 = o[t] - torch.mm(v, s_old[t]) - c
+        temp= temp1 + temp2 - mu * torch.mm(v.T, temp3)
         div = mu + tao
         res[t] = temp / div
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
     temp2_final = tanh(a[N]) + lambda2 / rho2
-    temp3_final = o[N] - np.dot(v, s_old[N]) - c - lambda3 / rho3
-    temp_final = rho2 * temp2_final + tao * s_old[N] - rho3 * np.dot(v.T, temp3_final)
+    temp3_final = o[N] - torch.mm(v, s_old[N]) - c - lambda3 / rho3
+    temp_final = rho2 * temp2_final + tao * s_old[N] - rho3 * torch.mm(v.T, temp3_final)
     res[N] = temp_final / (rho2 + tao)
     return res
 
 
 # return the derivative of phi with regard to v
 def phi_v(lambda3, rho3, inputs, o, v, s, c, mu):
-    temp1 = np.zeros_like(v)
-    # temp2 = np.zeros_like(v)
+    temp1 = torch.zeros_like(v)
+    # temp2 = torch.zeros_like(v)
     N = len(inputs) - 1
     tao = 1
     for t in range(N):
-        temp = o[t] - np.dot(v, s[t]) - c
-        temp1 = temp1 + np.dot(temp, s[t].T)
-        # temp2 = temp2 + np.dot(temp, s[t].T)
+        temp = o[t] - torch.mm(v, s[t]) - c
+        temp1 = temp1 + torch.mm(temp, s[t].T)
+        # temp2 = temp2 + torch.mm(temp, s[t].T)
     temp = mu * temp1
-    temp2 = o[N] - np.dot(v, s[N]) - c - lambda3 / rho3
-    final = rho3 * np.dot(temp2, s[N].T)
+    temp2 = o[N] - torch.mm(v, s[N]) - c - lambda3 / rho3
+    final = rho3 * torch.mm(temp2, s[N].T)
     res = v - (temp + final) / tao
     return res
 
 
 # return the derivative of phi with regard to c
 def phi_c(lambda3, rho3, inputs, o, v, s, c, mu):
-    temp1 = np.zeros_like(c)
+    temp1 = torch.zeros_like(c)
     N = len(inputs) - 1
     for t in range(N):
-        temp = o[t] - np.dot(v, s[t])
+        temp = o[t] - torch.mm(v, s[t])
         temp1 = temp1 + temp
     temp = mu * temp1
-    temp2 = o[N] - np.dot(v, s[N]) - lambda3 / rho3
+    temp2 = o[N] - torch.mm(v, s[N]) - lambda3 / rho3
     final = rho3 * temp2
     res = (temp + final) / (rho3 + mu*(N-1))
     return res
@@ -220,10 +216,10 @@ def phi_o(do, inputs, lambda3, rho3, o, v, s, c, mu):
     N = len(inputs) - 1
     res = {}
     for t in range(N):
-        # temp = o[t] - np.dot(v, s[t]) - c - lambda3 / rho3
-        temp = np.dot(v, s[t]) + c
+        # temp = o[t] - torch.mm(v, s[t]) - c - lambda3 / rho3
+        temp = torch.mm(v, s[t]) + c
         res[t] = temp - do[t] / mu
-    temp = np.dot(v, s[N]) + c + lambda3 / rho3
+    temp = torch.mm(v, s[N]) + c + lambda3 / rho3
     res[N] = temp - do[N] / rho3
     return res
 
@@ -314,9 +310,9 @@ def update_lambda1(inputs, lambda1, rho1, a, u, w, s, b):
     N = len(inputs) - 1
     x = {}
     vocab_size = u.shape[1]
-    x[N] = np.zeros((vocab_size, 1))
+    x[N] = torch.zeros((vocab_size, 1))
     x[N][inputs[N]] = 1
-    temp = a[N] - np.dot(u, x[N]) - np.dot(w, s[N-1]) - b
+    temp = a[N] - torch.mm(u, x[N]) - torch.mm(w, s[N-1]) - b
     lambda_new = (lambda1 - rho1 * temp) / 10
     return lambda_new
 
@@ -332,6 +328,6 @@ def update_lambda2(inputs, lambda2, rho2, s, a):
 # update of lambda3
 def update_lambda3(inputs, lambda3, rho3, o, v, s, c):
     N = len(inputs) - 1
-    temp = o[N] - np.dot(v, s[N]) - c
+    temp = o[N] - torch.mm(v, s[N]) - c
     lambda_new = (lambda3 - rho3 * temp) / 10
     return lambda_new
